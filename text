@@ -1,4 +1,3 @@
-// Automatic FlutterFlow imports
 import '/backend/schema/structs/index.dart';
 import '/flutter_flow/ff_builtin_enums.dart';
 import '/actions/actions.dart' as action_blocks;
@@ -20,11 +19,9 @@ import '/flutter_flow/custom_functions.dart'; // Imports custom functions
 import 'package:flutter/material.dart';
 // Begin custom widget code
 // DO NOT REMOVE OR MODIFY THE CODE ABOVE!
-
 import 'package:flutter/services.dart';
 import 'package:custom_code_library_rtycn8/app_state.dart'
     as custom_code_library_rtycn8_app_state;
-
 import 'dart:math';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -34,13 +31,12 @@ class AlcForm extends StatefulWidget {
   final AlcInput input;
   final ApiService apiService;
   final Map<int, String> itemTypes;
-
-  const AlcForm(
-      {super.key,
-      required this.input,
-      required this.apiService,
-      required this.itemTypes});
-
+  const AlcForm({
+    super.key,
+    required this.input,
+    required this.apiService,
+    required this.itemTypes,
+  });
   @override
   State<AlcForm> createState() => _AlcFormState();
 }
@@ -54,28 +50,22 @@ class _AlcFormState extends State<AlcForm> {
   bool _showAutoCalc = false;
   bool _showAddRow = false;
   bool _hideItemCount = false;
-
   @override
   void initState() {
     super.initState();
     _rows = [];
     _setupVisibility();
-    // Initialize with one row as per VB constructor
     _initFirstRow();
   }
 
   void _setupVisibility() {
     final s = widget.input.statusMain;
     final s1 = widget.input.statusSub;
-    // VB Logic for visibility
-    // If Irreg = 2 Or Irreg = 5 Or Irreg = 6 Or Irreg = 12 Or Irreg = 13 Or Irreg = 27 Or Irreg = 28 Then
     if ([2, 5, 6, 12, 13, 27, 28].contains(s)) {
-      // If (SIrreg <> 23 And SIrreg <> 9 And SIrreg <> 10) Then
       if (![23, 9, 10].contains(s1)) {
         _showAutoCalc = true;
       }
     }
-    // If Irreg = 29 Or Irreg = 30 Or Irreg = 31 Or SIrreg = 29 Or SIrreg = 30 Or SIrreg = 31 Or SIrreg = 38 Then
     if ([29, 30, 31].contains(s) || [29, 30, 31, 38].contains(s1)) {
       _showAddRow = true;
       _showAutoCalc = true;
@@ -110,7 +100,6 @@ class _AlcFormState extends State<AlcForm> {
   }
 
   Future<void> _addRow() async {
-    // When adding a row manually, use default type and fetch options
     setState(() => _isLoading = true);
     try {
       final options = await widget.apiService.fetchPurityParams(
@@ -139,15 +128,8 @@ class _AlcFormState extends State<AlcForm> {
   }
 
   double remain_netwt(double rgwt, double rstwt) {
-    double rnwt = 0.0;
-    double nwt = 0.0;
-    double dedrate = widget.input.deduRate;
-
-    nwt = ((rgwt - rstwt) * dedrate / 100);
-
-    rnwt = double.parse(((rgwt - rstwt) - nwt).toStringAsFixed(2));
-
-    return rnwt;
+    double nwt = ((rgwt - rstwt) * widget.input.deduRate / 100);
+    return double.parse(((rgwt - rstwt) - nwt).toStringAsFixed(2));
   }
 
   Future<void> _showAlert(String message) async {
@@ -164,18 +146,12 @@ class _AlcFormState extends State<AlcForm> {
     );
   }
 
-  /// Extracts the numeric purity value from the text part of a purity string.
-  /// e.g., "Purity-70(18-ct)" -> 70.0
-  /// This replicates the complex parsing logic from the VB `getsubRecord` function.
   double _getNumericPurityFromHeaderText(String purityText) {
     if (purityText.isEmpty) return 0.0;
-
     List<String> purity = purityText.split('~');
     if (purity.isEmpty) return 0.0;
-
     final header = purity[0];
     List<String> spurity = [];
-
     if (header == "Purity Above 85(Above 20.5-ct)") {
       spurity = header.split('(');
       if (header.length >= 15) {
@@ -183,10 +159,12 @@ class _AlcFormState extends State<AlcForm> {
       } else {
         spurity.add("85");
       }
-    } else if (header == "Purity-70(18-ct)" ||
-        header == "Purity-75(19-ct)" ||
-        header == "Purity-80(20-ct)" ||
-        header == "Purity-85(20.5-ct)") {
+    } else if ([
+      "Purity-70(18-ct)",
+      "Purity-75(19-ct)",
+      "Purity-80(20-ct)",
+      "Purity-85(20.5-ct)"
+    ].contains(header)) {
       spurity = header.split('(')[0].split('-');
     } else if (header.startsWith("Purity>=")) {
       spurity = header.split('=');
@@ -196,23 +174,17 @@ class _AlcFormState extends State<AlcForm> {
         spurity = header.split('=');
       }
     }
-
     if (spurity.length > 1) {
       return double.tryParse(spurity[1].replaceAll(')', '').trim()) ?? 0.0;
     }
-
-    // This case is for fallbacks where the split might result in a single value
-    // that is the number itself, or parsing fails.
     return 0.0;
   }
 
   Future<void> _autoCalculate() async {
     await _recalculate();
-
     double currentGwSum = 0.0;
     double currentStSum = 0.0;
     double currentNetSum = 0.0;
-
     for (var row in _rows) {
       if (row.purityText.isNotEmpty && row.purityText.contains('~')) {
         currentGwSum += row.gw;
@@ -220,17 +192,14 @@ class _AlcFormState extends State<AlcForm> {
         currentNetSum += row.netwt;
       }
     }
-
     double remGw = widget.input.cgwt - currentGwSum;
     double remSt = widget.input.cstwt - currentStSum;
     double extraNet = remain_netwt(remGw, remSt);
-
     setState(() {
       _totGw = widget.input.cgwt;
       _totStwt = widget.input.cstwt;
       _totNetwt = currentNetSum + extraNet;
     });
-
     _showAlert("Auto Calculated. Remaining Net Added: $extraNet");
   }
 
@@ -238,8 +207,6 @@ class _AlcFormState extends State<AlcForm> {
     double gwSum = 0.0;
     double stSum = 0.0;
     double netSum = 0.0;
-
-    // Iterate over a copy to avoid concurrent modification issues if rows are deleted during async
     final rowsCopy = List<AlcRow>.from(_rows);
     for (var row in rowsCopy) {
       if (row.purityText.isEmpty || !row.purityText.contains('~')) {
@@ -248,53 +215,35 @@ class _AlcFormState extends State<AlcForm> {
         row.autoLoss = 0.0;
         continue;
       }
-
       List<String> purity = row.purityText.split('~');
       double purityVal =
           (purity.length > 1) ? (double.tryParse(purity[1]) ?? 0.0) : 0.0;
-
       if (purityVal >= 20 && purityVal <= 65) {
-        // dtview1.Rows(i).Cells("col_estimat").Value = Math.Round(100 - ((purity(1) / 87) * 100), 0)
         row.estimate = (100 - ((purityVal / 87) * 100)).roundToDouble();
-      } else if (purityVal == 100) {
-        // ElseIf purity(1) = 100 Then
-        row.estimate = purityVal;
       } else {
-        // Else ... SkipDeduction logic ...
         row.estimate = purityVal;
       }
-
-      // clnt = ((dtview1.Rows(i).Cells("col_gw").Value - dtview1.Rows(i).Cells("col_stwt").Value) * IIf(dtview1.Rows(i).Cells("col_estimat").Value / 100 = 0, 1, dtview1.Rows(i).Cells("col_estimat").Value / 100))
       double factor = (row.estimate / 100 == 0) ? 1.0 : (row.estimate / 100);
       double clnt = ((row.gw - row.stwt) * factor);
-
-      // If dtview1.Rows(i).Cells("col_estimat").Value = 0 Then
       if (row.estimate == 0) {
         row.netwt = double.parse(clnt.toStringAsFixed(2));
       } else {
-        // VB Logic: Else dtview1.Rows(i).Cells("col_netwt").Value = Math.Round(((dtview1.Rows(i).Cells("col_gw").Value - dtview1.Rows(i).Cells("col_stwt").Value) - clnt), 2)
         row.netwt =
             double.parse(((row.gw - row.stwt) - clnt).toStringAsFixed(2));
       }
-
       if (row.netwt < 0) {
         row.netwt = 0;
         await _showAlert("Net weight cannot be negative");
       }
-
-      // Auto Loss Calculation
       double ilv = (row.cntwt * widget.input.lendRate).roundToDouble();
       double ialv = (row.netwt * widget.input.lendRate).roundToDouble();
       row.autoLoss = ilv - ialv;
     }
-
-    // Calculate totals based on current _rows (in case rows were removed)
     for (var row in _rows) {
       gwSum += row.gw;
       stSum += row.stwt;
       netSum += row.netwt;
     }
-
     setState(() {
       _totGw = gwSum;
       _totStwt = stSum;
@@ -305,16 +254,12 @@ class _AlcFormState extends State<AlcForm> {
   Future<void> _onItemCountChanged(AlcRow row, String value) async {
     int val = int.tryParse(value) ?? 0;
     row.itemCount = val;
-
-    // VB Logic: Check total count and auto-add row
     int totalCount = _rows.fold(0, (sum, r) => sum + r.itemCount);
     int dbCount = widget.input.dbItemCount;
-
     if (dbCount - totalCount >= 1) {
       await _addRow();
     } else if (dbCount - totalCount < 0) {
       await _showAlert("Item count exceeds actual Items");
-      // Reset to remaining
       int otherRowsCount = totalCount - val;
       row.itemCount = dbCount - otherRowsCount;
       if (row.itemCount < 0) row.itemCount = 0;
@@ -325,19 +270,13 @@ class _AlcFormState extends State<AlcForm> {
   void _onStoneChanged(AlcRow row, String value) {
     double val = double.tryParse(value) ?? 0.0;
     row.stwt = val;
-
-    // VB Logic: Stone validation
     if (row.stwt > row.gw) {
       row.stwt = 0;
       _showAlert("Stone Weight exceeds Gross weight");
     } else {
-      // Check total stone against pledge stone
       double currentStSum = _rows.fold(0.0, (sum, r) => sum + r.stwt);
       int irreg = widget.input.statusMain;
-      if (irreg != 9 &&
-          irreg != 10 &&
-          irreg != 23 &&
-          widget.input.cstwt < currentStSum) {
+      if (![9, 10, 23].contains(irreg) && widget.input.cstwt < currentStSum) {
         row.stwt = 0;
         _showAlert("Stone Weight exceeds pledge Stone weight");
       }
@@ -350,7 +289,7 @@ class _AlcFormState extends State<AlcForm> {
     setState(() => _isLoading = true);
     try {
       row.typeId = newTypeId;
-      row.purityText = ''; // Reset purity as options change
+      row.purityText = '';
       row.purityOptions = await widget.apiService.fetchPurityParams(
           widget.input.pledgeNo,
           widget.input.brid.toString(),
@@ -364,52 +303,15 @@ class _AlcFormState extends State<AlcForm> {
   }
 
   void _handleSave() {
-    // Validation
-    if (_rows.isEmpty) {
-      // VB: If Not String.IsNullOrEmpty(txt_totgw.Text) ...
-      // If rows are empty but user wants to save, VB checks if grid has rows.
-      // Here we enforce at least one row or valid totals.
-      if (_totGw == 0 && _totNetwt == 0) {
-        // Allow close if empty? VB says "Please fill all the items" if totals are present but grid empty?
-        // Actually VB iterates rows to check if col_gw is empty.
-      }
-    }
-
-    bool allFilled = true;
-    for (var row in _rows) {
-      if (row.gw == 0) {
-        // Assuming 0 GW is invalid/empty
-        allFilled = false;
-        break;
-      }
-
-      if (row.purityText == '') {
-        allFilled = false;
-        break;
-      }
-    }
-
+    bool allFilled = _rows.every((row) => row.gw > 0 && row.purityText != '');
     if (!allFilled) {
-      _showAlert("Please Enter Values or  Delete Rows to Close Form");
+      _showAlert("Please Enter Values or Delete Rows to Close Form");
       return;
     }
-
-    // VB Logic: getsubRecord
-    String subrecord = "";
-    for (var row in _rows) {
+    String subrecord = _rows.map((row) {
       double pVal = _getNumericPurityFromHeaderText(row.purityText);
-
-      // dtstr = cItemid & "*" & ...
-      String rowStr =
-          "${widget.input.itemId}*${row.itemCount}*${row.gw}*${row.stwt}*${row.netwt}*${pVal.toString()}*${row.autoLoss}";
-
-      if (subrecord.isEmpty) {
-        subrecord = rowStr;
-      } else {
-        subrecord = "$subrecord!$rowStr";
-      }
-    }
-
+      return "${widget.input.itemId}*${row.itemCount}*${row.gw}*${row.stwt}*${row.netwt}*${pVal.toString()}*${row.autoLoss}";
+    }).join('!');
     Navigator.pop(
         context,
         AlcResult(
@@ -504,56 +406,54 @@ class _AlcFormState extends State<AlcForm> {
                       columns: const [
                         DataColumn(
                             label: Text('Item',
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 12))), // col_item
+                                    fontSize: 12))),
                         DataColumn(
                             label: Text('No of pieces',
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 12))), // col_itemcount
+                                    fontSize: 12))),
                         DataColumn(
                             label: Text('Gross Wt',
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 12))), // col_gw
+                                    fontSize: 12))),
                         DataColumn(
                             label: Text('Net wt',
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 12))), // col_netwt
+                                    fontSize: 12))),
                         DataColumn(
                             label: Text('Stone Wt',
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 12))), // col_stwt
-
+                                    fontSize: 12))),
                         DataColumn(
                             label: Text('Cur.Purity',
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 12))), // col_curpurity
+                                    fontSize: 12))),
                         DataColumn(
                             label: Text('Item Type',
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 12))), // col_Itemtype
+                                    fontSize: 12))),
                         DataColumn(
                             label: Text('Purity',
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 12))), // col_purity_dt1
+                                    fontSize: 12))),
                         DataColumn(
                             label: Text('Purity Deduction',
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 12))), // col_estimat
-                        // DataColumn(label: Text('A.Loss')), // col_autoloss
+                                    fontSize: 12))),
                         DataColumn(
                             label: Text('Delete',
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 12))), // col_Delete
+                                    fontSize: 12))),
                       ],
                       rows: List.generate(_rows.length, (index) {
                         final row = _rows[index];
@@ -570,8 +470,8 @@ class _AlcFormState extends State<AlcForm> {
                                 enabled: !_hideItemCount,
                                 onChanged: (v) => _onItemCountChanged(row, v),
                                 inputFormatters: [
-                                  FilteringTextInputFormatter.allow(RegExp(
-                                      r'^\d*\.?\d*')) // ✅ allows only numbers
+                                  FilteringTextInputFormatter.allow(
+                                      RegExp(r'^\d*\.?\d*'))
                                 ],
                                 decoration: const InputDecoration(
                                     isDense: true,
@@ -589,12 +489,11 @@ class _AlcFormState extends State<AlcForm> {
                                     const TextInputType.numberWithOptions(
                                         decimal: true),
                                 inputFormatters: [
-                                  FilteringTextInputFormatter.allow(RegExp(
-                                      r'^\d*\.?\d*')) // ✅ allows only numbers
+                                  FilteringTextInputFormatter.allow(
+                                      RegExp(r'^\d*\.?\d*'))
                                 ],
                                 onChanged: (v) {
                                   row.gw = double.tryParse(v) ?? 0.0;
-
                                   _recalculate();
                                 },
                               ),
@@ -608,8 +507,8 @@ class _AlcFormState extends State<AlcForm> {
                                     border: OutlineInputBorder()),
                                 initialValue: row.stwt.toString(),
                                 inputFormatters: [
-                                  FilteringTextInputFormatter.allow(RegExp(
-                                      r'^\d*\.?\d*')) // ✅ allows only numbers
+                                  FilteringTextInputFormatter.allow(
+                                      RegExp(r'^\d*\.?\d*'))
                                 ],
                                 keyboardType:
                                     const TextInputType.numberWithOptions(
@@ -675,7 +574,6 @@ class _AlcFormState extends State<AlcForm> {
                               ),
                             )),
                             DataCell(Text(row.estimate.toStringAsFixed(2))),
-                            // DataCell(Text(row.autoLoss.toStringAsFixed(2))),
                             DataCell(IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red),
                               onPressed: () {
@@ -730,7 +628,6 @@ class AlcRow {
   int typeId;
   List<String> purityOptions;
   double cntwt;
-
   AlcRow({
     required this.itemCount,
     required this.gw,
@@ -752,7 +649,6 @@ class _HeaderStat extends StatelessWidget {
   final Color? textColor;
   const _HeaderStat(this.label, this.value,
       {this.isPrimary = false, this.textColor});
-
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -778,13 +674,11 @@ class _HeaderStat extends StatelessWidget {
 class PacketDemoPage extends StatefulWidget {
   final double? width;
   final double? height;
-
   const PacketDemoPage({
     super.key,
     this.width,
     this.height,
   });
-
   @override
   State<PacketDemoPage> createState() => _PacketDemoPageState();
 }
@@ -796,41 +690,28 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
   Map<int, String> _itemTypes = {};
   List<List<String>> _purityOptionsList = [];
   bool isEnabled = true;
-
   @override
   void initState() {
     super.initState();
-    // FFAppState().pledgeNumIrr = '0101960700728477';
-    // FFAppState().selectbrid = '196';
     FFAppState().selectbrid =
         custom_code_library_rtycn8_app_state.FFAppState().SelectedBranchID;
     FFAppState().cmbStatus = 0;
     FFAppState().cmbStatus2 = 0;
     FFAppState().loss = '';
-    // ---------- SAMPLE DATA ----------
     audit = AuditState(
-      lendRate: 0, // Will be fetched
-      pledgeBalance: 0, // sample pledge balance
+      lendRate: 0,
+      pledgeBalance: 0,
       totalNetWtDb: 0.0,
       scheme: '',
       actweight: 0.0,
       netweight: 0.0,
-      pledgeDate:
-          DateTime(2014, 1, 1), // after 08-Feb-2013 => stone+purity deductible
-      marketRate: 3100, // sample market rate for Status 4 calc
+      pledgeDate: DateTime(2014, 1, 1),
+      marketRate: 3100,
     );
-
-     _loadIrr();
+    _loadIrr();
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
-
-
- Future<void> _loadIrr() async {
+  Future<void> _loadIrr() async {
     setState(() => _isLoading = true);
     try {
       final api = ApiService();
@@ -839,10 +720,11 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
       setState(() {
         _statusOptions = statuses;
         if (!_statusOptions.containsKey(FFAppState().cmbStatus)) {
-          if (_statusOptions.containsKey(0))
+          if (_statusOptions.containsKey(0)) {
             FFAppState().cmbStatus = 0;
-          else if (_statusOptions.isNotEmpty)
+          } else if (_statusOptions.isNotEmpty) {
             FFAppState().cmbStatus = _statusOptions.keys.first;
+          }
         }
       });
     } finally {
@@ -850,30 +732,69 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
     }
   }
 
+  DateTime? _parsePledgeDate(String raw) {
+    if (raw.isEmpty) return null;
+    try {
+      final dateStr = raw.trim().replaceAll(RegExp(r'[./]'), '-');
+      final parts = dateStr.split('-');
+      if (parts.length != 3) return null;
+      final day = parts[0].padLeft(2, '0');
+      final monRaw = parts[1];
+      final year = parts[2];
+      final month = (monRaw.isEmpty)
+          ? monRaw
+          : monRaw[0].toUpperCase() + monRaw.substring(1).toLowerCase();
+      final normalized = '$day-$month-$year';
+      final df = DateFormat('dd-MMM-yyyy', 'en_US');
+      return df.parseStrict(normalized);
+    } catch (e) {
+      debugPrint('Date parse error: $e');
+      return null;
+    }
+  }
+
+  Future<void> _populatePurityOptions(
+      List<Result1Struct> items, ApiService api) async {
+    _purityOptionsList.clear();
+    final typeCache = <int, List<String>>{};
+
+    for (final item in items) {
+      final typeId = item.colTypid ?? 0;
+      if (!typeCache.containsKey(typeId)) {
+        typeCache[typeId] = await api.fetchPurityParams(
+            FFAppState().pledgeNumIrr,
+            FFAppState().selectbrid,
+            typeId,
+            audit.scheme,
+            audit.pledgeDate);
+      }
+      final options = typeCache[typeId] ?? [];
+      _purityOptionsList.add(options);
+      String purityText = item.colPurity ?? '';
+      if (purityText.isNotEmpty && options.isNotEmpty) {
+        if (!options.contains(purityText)) {
+          final match = options.firstWhere(
+            (opt) => opt.startsWith(purityText),
+            orElse: () => '',
+          );
+          if (match.isNotEmpty) item.colPurity = match;
+        }
+      }
+    }
+  }
+
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
-
     try {
       final api = ApiService();
-      // 1. Fetch Items
       final items = await api.fetchPledgeItems(
           FFAppState().pledgeNumIrr, FFAppState().selectbrid);
-
-      // Fetch Item Types
-      final itemTypes = await api.fetchItemTypes();
-      _itemTypes = itemTypes;
-
-      // 2. Fetch Market Rate
+      _itemTypes = await api.fetchItemTypes();
       final mRate = await api.fetchMarketRate();
-      // 2b. Fetch Pledge Balance
       final pBal = await api.fetchPledgeBalance(FFAppState().pledgeNumIrr);
-
-      // 2c. Fetch Inventory Details (Lend Rate, Scheme, Date)
       final invDetails = await api.fetchInventoryDetails(
           FFAppState().selectbrid, FFAppState().pledgeNumIrr);
-
       double lRate = 0.0;
-
       if (invDetails != null) {
         lRate =
             double.tryParse(invDetails['LND_RATE']?.toString() ?? '0') ?? 0.0;
@@ -883,102 +804,26 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
                 0.0;
         audit.netweight =
             double.tryParse(invDetails['NET_WEIGHT']?.toString() ?? '0') ?? 0.0;
-        final raw = invDetails['PLEDGEDT']?.toString() ?? '';
-        print('Raw Pledge Date: $raw');
-
-        if (raw.isNotEmpty) {
-          try {
-            // 1) Normalize delimiters to '-'
-            final dateStr = raw.trim().replaceAll(RegExp(r'[./]'), '-');
-
-            // 2) Split and normalize the month to Title Case to satisfy 'MMM' (en_US)
-            final parts = dateStr.split('-');
-            if (parts.length != 3) {
-              throw FormatException(
-                  'Unexpected date shape. Expected dd-MMM-yyyy.');
-            }
-
-            // Normalize day (keep as is), month to Title Case, year as is
-            final day = parts[0].padLeft(2, '0');
-            final monRaw = parts[1];
-            final yearRaw = parts[2];
-
-            // Title-case the month token (e.g., feb/FEB -> Feb)
-            final month = (monRaw.isEmpty)
-                ? monRaw
-                : monRaw[0].toUpperCase() + monRaw.substring(1).toLowerCase();
-
-            // If you need to coerce 2-digit years, uncomment and choose a pivot rule
-            // String year;
-            // if (yearRaw.length == 2) {
-            //   final yy = int.parse(yearRaw);
-            //   // Pivot: 00-79 -> 2000-2079, 80-99 -> 1980-1999 (example)
-            //   year = (yy <= 79 ? 2000 + yy : 1900 + yy).toString();
-            // } else {
-            //   year = yearRaw;
-            // }
-            final year =
-                yearRaw; // keep as provided (expects 4 digits for parseStrict)
-
-            final normalized = '$day-$month-$year';
-            // 3) Parse strictly with en_US month names
-            final df = DateFormat('dd-MMM-yyyy', 'en_US');
-            audit.pledgeDate = df.parseStrict(normalized);
-
-            print('Parsed Pledge Date: ${audit.pledgeDate}');
-          } catch (e) {
-            debugPrint('Date parse error: $e');
-          }
+        final parsedDate =
+            _parsePledgeDate(invDetails['PLEDGEDT']?.toString() ?? '');
+        if (parsedDate != null) {
+          audit.pledgeDate = parsedDate;
         }
       } else {
         lRate = await api.fetchLendRate(FFAppState().pledgeNumIrr);
       }
-
-      // 3. Fetch Purity Options
-      _purityOptionsList.clear();
-      final typeCache = <int, List<String>>{};
-      for (final item in items) {
-        final typeId = item.colTypid ?? 0;
-        if (!typeCache.containsKey(typeId)) {
-          typeCache[typeId] = await api.fetchPurityParams(
-              FFAppState().pledgeNumIrr,
-              FFAppState().selectbrid,
-              typeId,
-              audit.scheme,
-              audit.pledgeDate);
-        }
-        final options = typeCache[typeId] ?? [];
-        _purityOptionsList.add(options);
-
-        String purityText = item.colPurity ?? '';
-        if (purityText.isNotEmpty && options.isNotEmpty) {
-          if (!options.contains(purityText)) {
-            final match = options.firstWhere(
-              (opt) => opt.startsWith(purityText),
-              orElse: () => '',
-            );
-            if (match.isNotEmpty) item.colPurity = match;
-          }
-        }
-      }
-
-
+      await _populatePurityOptions(items, api);
       setState(() {
         FFAppState().Dtview = items;
-        // print(FFAppState().Dtview);
-        // audit.totalNetWtDb =
-        //     items.fold(0.0, (sum, r) => sum + (r.colCntwt ?? 0.0));
         audit.marketRate = mRate;
         audit.lendRate = lRate;
         audit.pledgeBalance = pBal;
       });
-      _recalculateTotals();
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
-  // Alert-based message
   void _showMessage(String msg) {
     showDialog(
       context: context,
@@ -993,16 +838,13 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
     );
   }
 
-  // Minimal ALC dialog mock (like VB's Alcform)
   Future<AlcResult?> _openAlcForm(AlcInput input) async {
-    // Use the new AlcForm widget
     return showDialog<AlcResult>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlcForm(
         input: input,
-        apiService:
-            ApiService(), // Pass a new instance or reuse existing if available
+        apiService: ApiService(),
         itemTypes: _itemTypes,
       ),
     );
@@ -1011,10 +853,6 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
   Future<void> _dtviewCellEndEdit(int rowIndex, int columnIndex) async {
     if (FFAppState().Dtview.isNotEmpty) {
       isEnabled = false;
-      // cmbStatus.Enabled = False (Ignored in Flutter)
-      // cmbStatus1.Enabled = False (Ignored in Flutter)
-      // print('Cell Edit Ended - Row: $rowIndex, Column: $columnIndex');
-
       if (columnIndex > 2) {
         double loss = 0;
         double stone = 0;
@@ -1022,30 +860,21 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
         double clnt = 0;
         double gw = 0;
         int rowCount = FFAppState().Dtview.length;
-        // Me.Dtview.SelectionMode = DataGridViewSelectionMode.CellSelect (Ignored)
-
         List<int> iloanvalue = List.filled(rowCount, 0);
         List<int> iauloanvalue = List.filled(rowCount, 0);
         int totloanvalue = 0;
         int aalv = 0;
         int totaalv = 0;
-
         for (int i = 0; i < rowCount; i++) {
-          // Dim generalObj As New General (Ignored)
-
           if (columnIndex == 8 &&
               (FFAppState().Dtview[i].colPurity ?? '').isNotEmpty) {
-            // print('Purity changed at row $i: ${FFAppState().Dtview[i].colPurity}');
             var row = FFAppState().Dtview[i];
-            // print('Processing row $i with purity ${row.colPurity} and gw ${row.colGw}');
+
             if ((row.colGw ?? '').isNotEmpty &&
                 (row.colPurity ?? '').isNotEmpty) {
               List<String> purity = row.colPurity!.split('~');
-// print('Parsed purity for row $i: ${purity.length > 1 ? purity[1] : 'N/A'}');
               double pVal =
                   purity.length > 1 ? double.tryParse(purity[1]) ?? 0 : 0;
-              // print('Numeric purity value for row $i: $pVal');
-
               if (pVal >= 20 && pVal <= 65) {
                 row.colEstimat =
                     (100 - ((pVal / 87) * 100)).roundToDouble().toString();
@@ -1053,19 +882,12 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
                 row.colEstimat = pVal.toString();
               } else {
                 row.colEstimat = pVal.toString();
-                // SkipDeduction logic (Assuming false/0.0 based on context)
-                bool skip = false;
-
-                row.colEstimat = skip ? "0.0" : pVal.toString();
               }
-
               double gwVal = double.tryParse(row.colGw ?? '0') ?? 0;
               double stVal = double.tryParse(row.colStwt ?? '0') ?? 0;
               double estVal = double.tryParse(row.colEstimat ?? '0') ?? 0;
-
               clnt =
                   ((gwVal - stVal) * ((estVal / 100 == 0) ? 1 : estVal / 100));
-
               if (estVal == 0) {
                 row.colNetwt = clnt.toString();
               } else {
@@ -1074,7 +896,6 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
                     estVal != 100.0) {
                   List<String> ppurity = row.colPurity!.split('~');
                   List<String> spurity = ppurity[0].split('-');
-
                   if (ppurity[0] == "Purity Above 85(Above 20.5-ct)") {
                     spurity = ppurity[0].split('(');
                     if (spurity[0].length >= 15) {
@@ -1099,11 +920,9 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
                   if (spurity.length == 1) {
                     spurity = ppurity[0].split('=');
                   }
-
                   double spurityVal =
                       spurity.length > 1 ? double.tryParse(spurity[1]) ?? 0 : 0;
                   String itemName = FFAppState().Dtview[rowIndex].colItem ?? '';
-
                   if (spurityVal > 70) {
                     row.colNetwt = await _stonePurityDeduction(
                         ppurity.length > 1 ? ppurity[1] : '0',
@@ -1117,18 +936,15 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
                         row.colStwt ?? '0',
                         itemName);
                   }
-                  _showMessage("Stone  wise Purity Deduction calculated");
+                  _showMessage("Stone wise Purity Deduction calculated");
                 } else {
                   row.colNetwt =
                       double.parse(((gwVal - stVal) - clnt).toStringAsFixed(2))
                           .toString();
                 }
               }
-
               nt = nt + (double.tryParse(row.colNetwt ?? '0') ?? 0);
               FFAppState().totalNetWtVar = double.parse(nt.toStringAsFixed(2));
-
-              // Zero Spurious
               if ([36, 37, 38].contains(FFAppState().cmbStatus)) {
                 double cntWt = row.colCntwt ?? 0;
                 double lndRate = audit.lendRate;
@@ -1138,7 +954,6 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
                     (double.tryParse(row.colNetwt ?? '0')! * lndRate).round();
                 totloanvalue = (audit.netweight * lndRate).toInt();
                 row.colAutoloss = (iloanvalue[i] - iauloanvalue[i]).toString();
-
                 int totilv = 0;
                 int totialv = 0;
                 for (int index = 0; index < rowCount; index++) {
@@ -1151,31 +966,22 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
                 totaalv = (aalv == -1 ? 0 : aalv) + totialv;
                 double pBal = audit.pledgeBalance.toDouble();
                 double val = pBal - totaalv <= -1 ? 0 : pBal - totaalv;
-                // FFAppState().loss = val.toString();
+
                 FFAppState().update(() {
                   FFAppState().txtLoss = val;
                 });
               }
-
-              // Low Quality
-
-              // _showMessage("${FFAppState().cmbStatus} and ${FFAppState().cmbStatus2}");
               if ([5, 20, 6, 29, 30, 12, 13, 27, 28, 2, 1]
                       .contains(FFAppState().cmbStatus) &&
                   FFAppState().cmbStatus2 == 0) {
                 double cntWt = row.colCntwt ?? 0;
-
                 double lndRate = audit.lendRate;
-
                 iloanvalue[i] = (cntWt * lndRate).round();
-
                 iauloanvalue[i] =
                     (double.tryParse(row.colNetwt ?? '0.0')! * lndRate).round();
-
                 totloanvalue = (audit.netweight * lndRate).toInt();
-
                 row.colAutoloss = (iloanvalue[i] - iauloanvalue[i]).toString();
-                //  _showMessage("Row $i: cntWt=$cntWt, lndRate=$lndRate, audit.netweight=${audit.netweight}");
+
                 int totilv = 0;
                 int totialv = 0;
                 for (int index = 0; index < rowCount; index++) {
@@ -1185,11 +991,8 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
                   }
                 }
                 aalv = totloanvalue - totilv;
-
                 totaalv = aalv + totialv;
-
                 double pBal = audit.pledgeBalance.toDouble();
-                //  _showMessage("Pledge Balance: $pBal, Total ALOAN Value: $totaalv");
                 if (pBal > totaalv) {
                   double val = pBal - totaalv;
                   FFAppState().update(() {
@@ -1201,7 +1004,6 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
                     FFAppState().txtLoss = 0.0;
                   });
                 }
-                //  _showMessage(" txtLoss: ${FFAppState().txtLoss}, Loss: ${FFAppState().loss}");
               }
             }
           } else if (columnIndex == 5) {
@@ -1213,8 +1015,6 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
                 (double.tryParse(FFAppState().Dtview[i].colGw ?? '0') ?? 0);
             FFAppState().totalGwVar = gw;
           }
-
-          // Partial Missing
           if (FFAppState().cmbStatus == 4 && columnIndex == 5) {
             double rt = audit.marketRate;
             FFAppState().Dtview[rowIndex].colNetwt = "0.0";
@@ -1228,13 +1028,16 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
           }
         }
       } else {
-        // print("Edit in non-data column, skipping ALC logic.");
         var row = FFAppState().Dtview[rowIndex];
+
+        bool isSpuriousOrLowQuality = [5, 6, 29, 30, 31, 12, 13, 27, 28, 2, 38]
+            .contains(FFAppState().cmbStatus);
+        bool isSpecialStatus = [23, 9, 10].contains(FFAppState().cmbStatus);
         if ((row.colStatus ?? false) == true &&
-            FFAppState().cmbStatus2 != 1 &&
-            FFAppState().cmbStatus2 > 0 &&
-            [5, 6, 29, 30, 31, 12, 13, 27, 28, 2, 38]
-                .contains(FFAppState().cmbStatus)) {
+            ((FFAppState().cmbStatus2 != 1 &&
+                    FFAppState().cmbStatus2 > 0 &&
+                    isSpuriousOrLowQuality) ||
+                isSpecialStatus)) {
           var res = await _openAlcForm(AlcInput(
               itemName: row.colItem ?? '',
               deduRate: row.colDeducrate.toDouble(),
@@ -1248,14 +1051,13 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
               cntwt: row.colCntwt ?? 0.0,
               scheme: audit.scheme,
               pledgeDate: audit.pledgeDate,
-              statusSub: FFAppState().cmbStatus2,
+              statusSub: isSpecialStatus ? 0 : FFAppState().cmbStatus2,
               typeId: row.colTypid ?? 0,
               curPurity: row.colCurpurity ?? '',
               itemType: '',
               lendRate: audit.lendRate));
-
           if (res != null) {
-            if (res.tGrwt > (row.colCgwt ?? 0.0)) {
+            if (!isSpecialStatus && res.tGrwt > (row.colCgwt ?? 0.0)) {
               _showMessage(
                   "Calculated Item Weight Exceeds Actual Gross Weight. Please Calculate Again");
               row.colStatus = false;
@@ -1271,51 +1073,11 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
             row.colStwt = res.tStwt.toString();
             row.colNetwt = res.tNtwt.toString();
             row.colSubrecord = res.subrecord;
-
             if (_isStonePurity_Deductible() &&
                 (double.tryParse(row.colStwt ?? '0') ?? 0) > 0) {
               row.colNetwt = await _alcStonePurityDeduction(
                   row.colNetwt!, row.colGw!, row.colStwt!, row.colItem ?? '');
             }
-            // _recalculateTotals();
-            _recalculate();
-          }
-        }
-
-        if ((row.colStatus ?? false) == true &&
-            [23, 9, 10].contains(FFAppState().cmbStatus)) {
-          var res = await _openAlcForm(AlcInput(
-              itemName: row.colItem ?? '',
-              deduRate: row.colDeducrate.toDouble(),
-              dbItemCount: row.colDbitemcount ?? 0,
-              itemId: row.colItemid ?? 0,
-              brid: int.tryParse(FFAppState().selectbrid) ?? 0,
-              pledgeNo: FFAppState().pledgeNumIrr,
-              cgwt: row.colCgwt ?? 0.0,
-              cstwt: row.colCstwt.toDouble(),
-              statusMain: FFAppState().cmbStatus,
-              cntwt: row.colCntwt ?? 0.0,
-              scheme: audit.scheme,
-              pledgeDate: audit.pledgeDate,
-              statusSub: 0,
-              typeId: row.colTypid ?? 0,
-              curPurity: row.colCurpurity ?? '',
-              itemType: '',
-              lendRate: audit.lendRate));
-
-          if (res != null) {
-            row.colItemcount = (row.colDbitemcount ?? 0).toString();
-            row.colGw = res.tGrwt.toString();
-            row.colStwt = res.tStwt.toString();
-            row.colNetwt = res.tNtwt.toString();
-            row.colSubrecord = res.subrecord;
-
-            if (_isStonePurity_Deductible() &&
-                (double.tryParse(row.colStwt ?? '0') ?? 0) > 0) {
-              row.colNetwt = await _alcStonePurityDeduction(
-                  row.colNetwt!, row.colGw!, row.colStwt!, row.colItem ?? '');
-            }
-            // _recalculateTotals();
             _recalculate();
           }
         }
@@ -1325,165 +1087,38 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
   }
 
   Future<void> _handleStatusChange(int? status) async {
-    
-    FFAppState().selectbrid =
-        custom_code_library_rtycn8_app_state.FFAppState().SelectedBranchID;
-    _loadData();
     if (status == null) return;
-    setState(() => _isLoading = true);
-    try {
-      final api = ApiService();
-      final items = await api.fetchPledgeItems(
-          FFAppState().pledgeNumIrr, FFAppState().selectbrid);
-
-      _purityOptionsList.clear();
-      final typeCache = <int, List<String>>{};
-
-      FFAppState().Dtview = items;
-      for (final item in items) {
-        final typeId = item.colTypid ?? 0;
-        if (!typeCache.containsKey(typeId)) {
-          typeCache[typeId] = await api.fetchPurityParams(
-              FFAppState().pledgeNumIrr,
-              FFAppState().selectbrid,
-              typeId,
-              audit.scheme,
-              audit.pledgeDate);
-        }
-        final options = typeCache[typeId] ?? [];
-        _purityOptionsList.add(options);
-
-        String purityText = item.colPurity ?? '';
-        if (purityText.isNotEmpty && options.isNotEmpty) {
-          if (!options.contains(purityText)) {
-            final match = options.firstWhere(
-              (opt) => opt.startsWith(purityText),
-              orElse: () => '',
-            );
-            if (match.isNotEmpty) item.colPurity = match;
-          }
-        }
-      }
-      final invDetails = await api.fetchInventoryDetails(
-          FFAppState().selectbrid, FFAppState().pledgeNumIrr);
-
-      double lRate = 0.0;
-
-      if (invDetails != null) {
-        audit.lendRate =
-            double.tryParse(invDetails['LND_RATE']?.toString() ?? '0') ?? 0.0;
-        audit.scheme = invDetails['SCHEME_NM']?.toString() ?? '';
-        audit.actweight =
-            double.tryParse(invDetails['ACTUAL_GROSS_WT']?.toString() ?? '0') ??
-                0.0;
-        audit.netweight =
-            double.tryParse(invDetails['NET_WEIGHT']?.toString() ?? '0') ?? 0.0;
-        final raw = invDetails['PLEDGEDT']?.toString() ?? '';
-        print('Raw Pledge Date: $raw');
-
-        if (raw.isNotEmpty) {
-          try {
-            // 1) Normalize delimiters to '-'
-            final dateStr = raw.trim().replaceAll(RegExp(r'[./]'), '-');
-
-            // 2) Split and normalize the month to Title Case to satisfy 'MMM' (en_US)
-            final parts = dateStr.split('-');
-            if (parts.length != 3) {
-              throw FormatException(
-                  'Unexpected date shape. Expected dd-MMM-yyyy.');
-            }
-
-            // Normalize day (keep as is), month to Title Case, year as is
-            final day = parts[0].padLeft(2, '0');
-            final monRaw = parts[1];
-            final yearRaw = parts[2];
-
-            // Title-case the month token (e.g., feb/FEB -> Feb)
-            final month = (monRaw.isEmpty)
-                ? monRaw
-                : monRaw[0].toUpperCase() + monRaw.substring(1).toLowerCase();
-
-            // If you need to coerce 2-digit years, uncomment and choose a pivot rule
-            // String year;
-            // if (yearRaw.length == 2) {
-            //   final yy = int.parse(yearRaw);
-            //   // Pivot: 00-79 -> 2000-2079, 80-99 -> 1980-1999 (example)
-            //   year = (yy <= 79 ? 2000 + yy : 1900 + yy).toString();
-            // } else {
-            //   year = yearRaw;
-            // }
-            final year =
-                yearRaw; // keep as provided (expects 4 digits for parseStrict)
-
-            final normalized = '$day-$month-$year';
-            // 3) Parse strictly with en_US month names
-            final df = DateFormat('dd-MMM-yyyy', 'en_US');
-            audit.pledgeDate = df.parseStrict(normalized);
-
-            print('Parsed Pledge Date: ${audit.pledgeDate}');
-          } catch (e) {
-            debugPrint('Date parse error: $e');
-          }
-        }
-
-        _purityOptionsList.clear();
-        final typeCache = <int, List<String>>{};
-        for (final item in items) {
-          final typeId = item.colTypid ?? 0;
-          if (!typeCache.containsKey(typeId)) {
-            typeCache[typeId] = await api.fetchPurityParams(
-                FFAppState().pledgeNumIrr,
-                FFAppState().selectbrid,
-                typeId,
-                audit.scheme,
-                audit.pledgeDate);
-          }
-          final options = typeCache[typeId] ?? [];
-          _purityOptionsList.add(options);
-
-          String purityText = item.colPurity ?? '';
-          if (purityText.isNotEmpty && options.isNotEmpty) {
-            if (!options.contains(purityText)) {
-              final match = options.firstWhere(
-                (opt) => opt.startsWith(purityText),
-                orElse: () => '',
-              );
-              if (match.isNotEmpty) item.colPurity = match;
-            }
-          }
-        }
-      } else {
-        audit.lendRate = await api.fetchLendRate(FFAppState().pledgeNumIrr);
-      }
-
-      setState(() {
-        FFAppState().totalGwVar = 0.0;
-        FFAppState().totalNetWtVar = 0.0;
-        FFAppState().totalStoneVar = 0.0;
-        FFAppState().cmbStatus = status;
-        FFAppState().loss = '0.0'; // Reset loss on status change
-        final autoLossStatuses = [3, 7, 15, 16, 17, 18, 19, 21, 24, 25, 26, 32];
-
-        if (autoLossStatuses.contains(FFAppState().cmbStatus)) {
-          if (FFAppState().cmbStatus == 7) {
-            FFAppState().loss = audit.pledgeBalance.toString();
-          } else if (FFAppState().cmbStatus == 3) {
-            FFAppState().loss =
-                (audit.actweight * audit.marketRate).round().toString();
-          }
-          FFAppState().flgIrr = '0';
-        } else {
-          _recalculateTotals();
-          FFAppState().flgIrr = '1';
-        }
-      });
-    } catch (e) {
-      debugPrint('Error loading data on status change: $e');
-    } finally {
-      setState(() => _isLoading = false);
+    if (FFAppState().pledgeNumIrr.isEmpty) {
+      _showMessage("Please enter pledge no");
+      return;
     }
-    FFAppState().update(() {
+    setState(() {
+      FFAppState().cmbStatus = status;
+      FFAppState().selectbrid =
+          custom_code_library_rtycn8_app_state.FFAppState().SelectedBranchID;
+      FFAppState().loss = '0.0';
       FFAppState().txtLoss = 0.0;
+    });
+    await _loadData();
+    setState(() {
+      FFAppState().totalGwVar = 0.0;
+      FFAppState().totalNetWtVar = 0.0;
+      FFAppState().totalStoneVar = 0.0;
+
+      final autoLossStatuses = [3, 7, 15, 16, 17, 18, 19, 21, 24, 25, 26, 32];
+
+      if (autoLossStatuses.contains(FFAppState().cmbStatus)) {
+        if (FFAppState().cmbStatus == 7) {
+          FFAppState().loss = audit.pledgeBalance.toString();
+        } else if (FFAppState().cmbStatus == 3) {
+          FFAppState().loss =
+              (audit.actweight * audit.marketRate).round().toString();
+        }
+        FFAppState().flgIrr = '0';
+      } else {
+         _recalculateTotals();
+        FFAppState().flgIrr = '1';
+      }
     });
   }
 
@@ -1494,56 +1129,44 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
       r.colPurity = '';
       _purityOptionsList[rowIndex] = [];
     });
-
     final api = ApiService();
     final newOptions = await api.fetchPurityParams(FFAppState().pledgeNumIrr,
         FFAppState().selectbrid, newTypeId, audit.scheme, audit.pledgeDate);
+
     setState(() => _purityOptionsList[rowIndex] = newOptions);
     _dtviewCellEndEdit(rowIndex, 6);
   }
 
   void _recalculate() {
-    final rows = FFAppState().Dtview; // assume list of your row model
+    final rows = FFAppState().Dtview;
     final double lndRate = (audit.lendRate ?? 0).toDouble();
     final double pBal = (audit.pledgeBalance ?? 0).toDouble();
-
     double stoneSum = 0.0;
     double gwSum = 0.0;
     double ntSum = 0.0;
-
     int totilv = 0;
     int totialv = 0;
-
     for (var i = 0; i < rows.length; i++) {
       final r = rows[i];
-
       final double st = double.tryParse(r.colStwt ?? '') ?? 0.0;
       final double gw = double.tryParse(r.colGw ?? '') ?? 0.0;
       final double net = double.tryParse(r.colNetwt ?? '') ?? 0.0;
-
       final double cnt = (r.colCntwt ?? 0.0).toDouble();
-
       stoneSum += st;
       gwSum += gw;
       ntSum += net;
-
       final int ilv = (cnt * lndRate).round();
       final int ialv = (net * lndRate).round();
-
       totilv += ilv;
       totialv += ialv;
-
       r.colAutoloss = (ilv - ialv).toString();
     }
-
     FFAppState().totalStoneVar = double.parse(stoneSum.toStringAsFixed(3));
     FFAppState().totalGwVar = gwSum;
     FFAppState().totalNetWtVar = double.parse(ntSum.toStringAsFixed(3));
-
     final int totLoanValue = (audit.netweight * lndRate).round();
     final int aalv = totLoanValue - totilv;
     final int totaalv = aalv + totialv;
-
     final double loss = (pBal > totaalv) ? (pBal - totaalv) : 0.0;
     FFAppState().update(() {
       FFAppState().txtLoss = loss;
@@ -1554,47 +1177,36 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
     double stoneSum = 0, gwSum = 0, ntSum = 0;
     int totilv = 0, totialv = 0;
     double totLoanValue = audit.netweight * audit.lendRate;
-
     for (final r in FFAppState().Dtview) {
       double st = double.tryParse(r.colStwt ?? '0') ?? 0.0;
       double gw = double.tryParse(r.colGw ?? '0') ?? 0.0;
       double nt = double.tryParse(r.colNetwt ?? '0') ?? 0.0;
       double cnt = r.colCntwt ?? 0.0;
-
       stoneSum += st;
       gwSum += gw;
       ntSum += nt;
-
       if (cnt > 0 && nt >= 0) {
         int ilv = 0;
         int ialv = 0;
-
         if ([36, 37, 38].contains(FFAppState().cmbStatus)) {
-          // Spurious: Round(Round(val, 2)) to match VB logic
           double rawIlv = cnt * audit.lendRate;
           double rounded2 = double.parse(rawIlv.toStringAsFixed(2));
           ilv = rounded2.round();
           ialv = (nt * audit.lendRate).round();
         } else {
-          // Low Quality / Others: Direct Round
           ilv = (cnt * audit.lendRate).round();
           ialv = (nt * audit.lendRate).round();
         }
-
         r.colAutoloss = (ilv - ialv).toString();
         totilv += ilv;
         totialv += ialv;
       }
     }
-
     double totalStone = double.parse(stoneSum.toStringAsFixed(3));
     double totalGw = double.parse(gwSum.toStringAsFixed(3));
     double totalNetWt = double.parse(ntSum.toStringAsFixed(3));
-
-    // Re-use the logic from onCellEditEnd for loss calculation
     double finalLoss = _calculateLossFromTotals(
         totLoanValue, totilv, totialv, totalGw, totalStone);
-
     FFAppState().update(() {
       FFAppState().totalNetWtVar = double.parse(totalNetWt.toStringAsFixed(2));
       FFAppState().totalGwVar = totalGw;
@@ -1606,32 +1218,22 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
   double _calculateLossFromTotals(double totLoanValue, int totilv, int totialv,
       double totalGw, double totalStone) {
     double loss = 0.0;
-    // print(FFAppState().cmbStatus);
     if (FFAppState().cmbStatus == 4) {
-      // Partial Missing
       loss = ((totalGw - totalStone) * audit.marketRate).roundToDouble();
     } else if ([36, 37, 38].contains(FFAppState().cmbStatus)) {
-      // Zero Spurious
       final aalv = (totLoanValue - totilv).round();
-      // VB: IIf(aalv = -1, 0, aalv)
       final adjustedAalv = (aalv == -1) ? 0 : aalv;
       final totaalv = adjustedAalv + totialv;
-      // VB: IIf(CInt(pledgebal) - totaalv <= -1, 0, CInt(pledgebal) - totaalv)
       double rawLoss = audit.pledgeBalance - totaalv.toDouble();
       loss = (rawLoss <= -1) ? 0 : rawLoss;
     } else if ([5, 20, 6, 29, 30, 12, 13, 27, 28, 2, 1]
             .contains(FFAppState().cmbStatus) &&
         FFAppState().cmbStatus2 == 0) {
-      // Low Quality / Spurious
       final aalv = (totLoanValue - totilv).round();
-      // VB: totaalv = aalv + totialv (No -1 check here in VB code provided)
       final totaalv = aalv + totialv;
-
       loss = (audit.pledgeBalance > totaalv)
           ? (audit.pledgeBalance - totaalv).toDouble()
           : 0.0;
-    } else {
-      loss = 0.0;
     }
     return loss;
   }
@@ -1650,7 +1252,6 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
     if (g <= 0) return "0";
     double net = g - s;
     double stone = (s / g) * 100;
-
     if (stone > 85 && itemname.toUpperCase() == "RAJPUTI") {
       _showMessage(
           "Rajaputi Item with stone weight greater than 85% of gross weight is not allowed. Ref : Circular : 5459");
@@ -1658,10 +1259,10 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
       _showMessage(
           "Items with stone weight greater than 50% of gross weight is not allowed. Ref : Circular : 4304");
     }
-
     double totalDed;
     double? apiDed =
         await ApiService().fetchStoneDeduction(audit.pledgeDate, stone);
+
     if (apiDed != null) {
       double extraDed = apiDed;
       if (stone > 60 && stone <= 85 && itemname.toUpperCase() == "RAJPUTI") {
@@ -1671,10 +1272,8 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
     } else {
       totalDed = 0.0;
     }
-
     double sntwt = net - (net * totalDed / 100);
     double roundedSntwt = double.parse(sntwt.toStringAsFixed(2));
-
     return roundedSntwt < 0 ? "0" : roundedSntwt.toString();
   }
 
@@ -1685,7 +1284,6 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
     if (g <= 0) return ntwt;
     double net = g - s;
     double stone = (s / g) * 100;
-
     if (stone > 85 && itemname.toUpperCase() == "RAJPUTI") {
       _showMessage(
           "Rajaputi Item with stone weight greater than 85% of gross weight is not allowed. Ref : Circular : 5459");
@@ -1693,10 +1291,10 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
       _showMessage(
           "Items with stone weight greater than 50% of gross weight is not allowed. Ref : Circular : 4304");
     }
-
     double ded = 0.0;
     double? apiDed =
         await ApiService().fetchStoneDeduction(audit.pledgeDate, stone);
+
     if (apiDed != null) {
       if (stone > 60 && stone <= 85 && itemname.toUpperCase() == "RAJPUTI") {
         ded = 5.0;
@@ -1704,12 +1302,10 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
         ded = apiDed;
       }
     }
-
     double deductionAmount = double.parse((net * ded / 100).toStringAsFixed(2));
     double currentNtwt = double.tryParse(ntwt) ?? 0;
     double sntwt =
         double.parse((currentNtwt - deductionAmount).toStringAsFixed(2));
-
     return sntwt < 0 ? "0" : sntwt.toString();
   }
 
@@ -1750,28 +1346,22 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
       32
     ];
     final isGridMode = !autoLossStatuses.contains(FFAppState().cmbStatus);
-
     String gwLabel = 'Gross Wt';
     String purityLabel = 'Purity';
     String estLossLabel = 'Purity Deduction in %';
     bool showPurity = true;
     bool lossreadOnly = true;
-    // bool isEnabled = true;
-
     if (FFAppState().cmbStatus == 2) gwLabel = 'Spurious G.W';
-    if ([5, 6, 14].contains(FFAppState().cmbStatus))
+    if ([5, 6, 14].contains(FFAppState().cmbStatus)) {
       purityLabel = 'Estimated Purity';
-    if (FFAppState().cmbStatus == 10) estLossLabel = 'Deduction in LoanAmount';
-
-    if ([23, 9, 10, 4].contains(FFAppState().cmbStatus)) {
-      showPurity = false;
     }
-
-    if (_isLoading)
+    if (FFAppState().cmbStatus == 10) estLossLabel = 'Deduction in LoanAmount';
+    if ([23, 9, 10, 4].contains(FFAppState().cmbStatus)) showPurity = false;
+    if (_isLoading) {
       return const Scaffold(
           backgroundColor: Color(0xFFF5F7FA),
           body: Center(child: CircularProgressIndicator()));
-
+    }
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       body: SingleChildScrollView(
@@ -1825,13 +1415,11 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
                                 child: Column(
                                   children: [
                                     Container(
-                                      padding: EdgeInsets.all(8),
+                                      padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
                                         color: Colors.white,
                                         borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: Colors.black,
-                                        ),
+                                        border: Border.all(color: Colors.black),
                                       ),
                                       width: double.infinity,
                                       height: 48,
@@ -1885,22 +1473,14 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
                           ),
                           if (FFAppState().cmbStatus == 3) ...[
                             const SizedBox(height: 16),
-
-                            //  Text("Loss Amount: "
-                            //     ),
-                            Container(
+                            SizedBox(
                               width: 400,
                               child: TextFormField(
                                 readOnly: lossreadOnly,
-
                                 decoration: InputDecoration(
-                                  //  labelText: 'Loss Amount: ${FFAppState().loss}',
-                                  border: OutlineInputBorder(),
+                                  border: const OutlineInputBorder(),
                                   hintText: 'Loss Amount: ${FFAppState().loss}',
                                 ),
-                                // initialValue: FFAppState().loss == '0.0' || FFAppState().loss == ''
-                                //     ? ''
-                                //     : FFAppState().loss,
                                 keyboardType:
                                     const TextInputType.numberWithOptions(
                                         decimal: true),
@@ -1908,7 +1488,7 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
                                   setState(() {
                                     FFAppState().update(() {
                                       FFAppState().txtLoss =
-                                          double.tryParse(v) ?? 0.0; //TODO
+                                          double.tryParse(v) ?? 0.0;
                                     });
                                   });
                                 },
@@ -1917,14 +1497,14 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
                           ],
                           if (FFAppState().cmbStatus == 32) ...[
                             const SizedBox(height: 16),
-                            Container(
+                            SizedBox(
                               width: 400,
                               child: TextFormField(
                                 decoration: InputDecoration(
                                   hintText: audit.tareWeight == 0
                                       ? 'Enter tare weight'
                                       : audit.tareWeight.toString(),
-                                  border: OutlineInputBorder(),
+                                  border: const OutlineInputBorder(),
                                 ),
                                 initialValue: audit.tareWeight == 0
                                     ? ''
@@ -1948,20 +1528,6 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
                       ),
                     ),
                   ),
-
-                  // const SizedBox(height: 16),
-                  // // Metrics Row
-                  // Row(
-                  //   children: [
-                  //     Expanded(child: _InfoCard(title: 'Lend Rate', value: audit.lendRate.toStringAsFixed(0), icon: Icons.percent)),
-                  //     const SizedBox(width: 8),
-                  //     Expanded(child: _InfoCard(title: 'Pledge Bal', value: '${audit.pledgeBalance}', icon: Icons.account_balance_wallet)),
-                  //     const SizedBox(width: 8),
-                  //     Expanded(child: _InfoCard(title: 'DB NetWt', value: audit.totalNetWtDb.toStringAsFixed(3), icon: Icons.scale)),
-                  //   ],
-                  // ),
-                  // const SizedBox(height: 16),
-
                   if (isGridMode)
                     Card(
                       elevation: 8,
@@ -2008,15 +1574,7 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
                                       .textTheme
                                       .headlineSmall
                                       ?.copyWith(
-                                        color: (double.tryParse(FFAppState()
-                                                        .txtLoss
-                                                        .toStringAsFixed(2)) ??
-                                                    0.0) >
-                                                0
-                                            // ? Colors.red
-                                            // : Colors.green,
-                                            ? Colors.black
-                                            : Colors.black,
+                                        color: Colors.black,
                                         fontWeight: FontWeight.bold,
                                       ),
                                 ),
@@ -2030,17 +1588,6 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
               ),
             ),
             if (isGridMode) ...[
-              // GestureDetector(
-              //   onTap: () {
-              //     _showMessage(FFAppState().Dtview.toString());
-              //   },
-              //   child: Padding(
-              //     padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              //     child: Text('Items',
-              //         style: Theme.of(context).textTheme.titleLarge),
-              //   ),
-              // ),
-              // const SizedBox(height: 8),
               Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
                 elevation: 8,
@@ -2060,45 +1607,45 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
                     columns: [
                       const DataColumn(
                           label: Text('Item Name',
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontWeight: FontWeight.bold, fontSize: 11))),
                       const DataColumn(
                           label: Text('Select',
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontWeight: FontWeight.bold, fontSize: 11))),
                       const DataColumn(
                           label: Text('No of Pieces',
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontWeight: FontWeight.bold, fontSize: 11))),
                       DataColumn(label: Text(gwLabel)),
                       const DataColumn(
                           label: Text('Net Wt',
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontWeight: FontWeight.bold, fontSize: 11))),
                       const DataColumn(
                           label: Text('Stone Wt',
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontWeight: FontWeight.bold, fontSize: 11))),
                       const DataColumn(
                           label: Text('CurrentPurity',
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontWeight: FontWeight.bold, fontSize: 11))),
                       if (showPurity)
                         DataColumn(
                             label: Text('Item Type',
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 11))),
                       if (showPurity)
                         DataColumn(
                             label: Text(purityLabel,
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 11))),
                       if (showPurity)
                         DataColumn(
                             label: Text(estLossLabel,
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 11))),
                     ],
@@ -2243,17 +1790,10 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
                 ),
               ),
             ] else
-              Center(
+              const Center(
                 child: Column(
                   children: [
-                    const SizedBox(height: 40),
-                    // Icon(Icons.auto_mode,
-                    //     size: 64,
-                    //     color: Theme.of(context).colorScheme.secondary),
-                    // const SizedBox(height: 16),
-                    // Text('Automatic Loss Calculation Mode',
-                    //     style: Theme.of(context).textTheme.headlineSmall),
-                    // const Text('Item details are read-only in this mode.'),
+                    SizedBox(height: 40),
                   ],
                 ),
               ),
@@ -2264,17 +1804,18 @@ class _PacketDemoPageState extends State<PacketDemoPage> {
     );
   }
 }
+
 class _SummaryItem extends StatelessWidget {
   final String label;
   final String value;
   final bool isBold;
   final Color? textColor;
-  const _SummaryItem(
-      {required this.label,
-      required this.value,
-      this.isBold = false,
-      this.textColor});
-
+  const _SummaryItem({
+    required this.label,
+    required this.value,
+    this.isBold = false,
+    this.textColor,
+  });
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -2294,8 +1835,6 @@ class _SummaryItem extends StatelessWidget {
   }
 }
 
-// =================== MODELS / HANDLERS (ONE-PAGE) ===================
-
 class AuditState {
   double lendRate;
   int pledgeBalance;
@@ -2305,9 +1844,7 @@ class AuditState {
   double marketRate;
   double actweight;
   double netweight;
-
-  // Form Fields
-  int? spotRectificationStatus; // 1=Rectified, 2=Not Rectified
+  int? spotRectificationStatus;
   String spotRemarks = '';
   DateTime rectificationDate = DateTime.now();
   int kycStatus = 0;
@@ -2323,7 +1860,6 @@ class AuditState {
   String firNo = '';
   String blobPath = '';
   double tareWeight = 0.0;
-
   AuditState({
     required this.lendRate,
     required this.pledgeBalance,
@@ -2356,6 +1892,7 @@ class AlcInput {
   final String curPurity;
   final String itemType;
   final double lendRate;
+
   AlcInput({
     required this.itemName,
     required this.deduRate,
@@ -2380,20 +1917,15 @@ class AlcInput {
 class AlcResult {
   final double tGrwt, tStwt, tNtwt;
   final String subrecord;
-  AlcResult(
-      {required this.tGrwt,
-      required this.tStwt,
-      required this.tNtwt,
-      required this.subrecord});
+  AlcResult({
+    required this.tGrwt,
+    required this.tStwt,
+    required this.tNtwt,
+    required this.subrecord,
+  });
 }
 
 typedef OpenAlcForm = Future<AlcResult?> Function(AlcInput input);
-
-// ---- Purity & Deduction Utils ----
-
-
-
-
 bool isStonePurityDeductible(DateTime pledgeDate) {
   final start = DateTime(2013, 2, 8), end = DateTime(2012, 3, 27);
   return pledgeDate.isAfter(start) || pledgeDate.isBefore(end);
@@ -2420,9 +1952,9 @@ Future<double> stonePurityDeduction({
       showMessage('Items stone >50% not allowed (Circular 4304)');
     }
     double? dedExtra;
-    if (stoneDeductionLookup != null)
+    if (stoneDeductionLookup != null) {
       dedExtra = await stoneDeductionLookup(stonePct, pledgeDate);
-
+    }
     double totalDed = 0.0;
     if (dedExtra != null) {
       double extra = dedExtra;
@@ -2430,11 +1962,7 @@ Future<double> stonePurityDeduction({
           stonePct <= 85 &&
           itemName.toUpperCase() == 'RAJPUTI') extra = 5.0;
       totalDed = max(0.0, spurityPercent + extra);
-    } else {
-      // VB Logic: If no stone deduction rule found, deduction (including purity) is reset to 0.
-      totalDed = 0.0;
     }
-
     final netGold = max(0.0, g - s);
     final sntwt = (netGold - (netGold * totalDed / 100.0));
     return sntwt <= 0 ? 0.0 : double.parse(sntwt.toStringAsFixed(2));
@@ -2462,9 +1990,9 @@ Future<double> alcStonePurityDeduction({
       showMessage('Items stone >50% not allowed (Circular 4304)');
     }
     double? dedExtra;
-    if (stoneDeductionLookup != null)
+    if (stoneDeductionLookup != null) {
       dedExtra = await stoneDeductionLookup(stonePct, pledgeDate);
-
+    }
     double dedVal = 0.0;
     if (dedExtra != null) {
       if (stonePct > 60 &&
@@ -2474,10 +2002,7 @@ Future<double> alcStonePurityDeduction({
       } else {
         dedVal = dedExtra;
       }
-    } else {
-      dedVal = 0.0;
     }
-
     final netGold = max(0.0, g - s);
     final stoneDed = netGold * (max(0.0, dedVal) / 100.0);
     final val = ntwt - double.parse(stoneDed.toStringAsFixed(2));
@@ -2485,21 +2010,24 @@ Future<double> alcStonePurityDeduction({
   });
 }
 
-
 class _NumberCell extends StatefulWidget {
   final double value;
   final ValueChanged<double> onChanged;
   final VoidCallback onSubmitted;
-  const _NumberCell(
-      {required this.value,
-      required this.onChanged,
-      required this.onSubmitted});
+
+  const _NumberCell({
+    required this.value,
+    required this.onChanged,
+    required this.onSubmitted,
+  });
+
   @override
   State<_NumberCell> createState() => _NumberCellState();
 }
 
 class _NumberCellState extends State<_NumberCell> {
   late TextEditingController _ctrl;
+
   @override
   void initState() {
     super.initState();
@@ -2512,7 +2040,6 @@ class _NumberCellState extends State<_NumberCell> {
     super.didUpdateWidget(oldWidget);
     if (widget.value != oldWidget.value) {
       final currentVal = double.tryParse(_ctrl.text) ?? 0.0;
-      // Only update text if the value actually changed significantly from what's currently typed
       if ((currentVal - widget.value).abs() > 0.0001) {
         _ctrl.text = widget.value == 0 ? '' : widget.value.toString();
         _ctrl.selection = TextSelection.collapsed(offset: _ctrl.text.length);
@@ -2545,15 +2072,10 @@ class _NumberCellState extends State<_NumberCell> {
 class ApiService {
   static String baseUrl = FFDevEnvironmentValues().Baseurl +
       '/AuditInspectionApi/api/GetInspectionData';
-  // 'https://app.manappuram.net/AuditInspectionApi/api/GetInspectionData';
-
   String token = FFAppState().Token;
-  // 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJtYW5hcHB1cmFtIiwianRpIjoiOGI4ZmRkM2EtMGE3OC00ZWQ0LWE2NjAtODQ5NmE5YzY4MjZiIiwiaWF0IjoxNzcxNjQ2NTc3LCJlbXBDb2RlIjoiMzcyMDUwIiwiZW1wTmFtZSI6IkFUSElSQSAgQSBVIiwiam9pbkR0IjoiMDgvMDUvMjAyMSAwMDowMDowMCIsIm5iZiI6MTc3MTY0NjU3NywiZXhwIjoxNzcxNjQ4Mzc3fQ.JAK5mLiOBwzvLSnTP9pMs-gppUtmoc3eV_1XfSwE20Q';
-
   Future<List<dynamic>> _get(String flag, String params) async {
     final url = Uri.parse('$baseUrl/$flag/$params/1');
     try {
-      // debugPrint('API Request: $url');
       final response = await http.get(
         url,
         headers: {'Authorization': 'Bearer $token'},
@@ -2571,14 +2093,6 @@ class ApiService {
     }
     return [];
   }
-
-  // Future<int> checkAuditMain(String user, int flag) async {
-  //   final data = await _get('PROC_AUDIT_MAIN', '$flag*$user');
-  //   if (data.isNotEmpty) {
-  //     return int.tryParse(data[0]['COUNT(*)']?.toString() ?? '0') ?? 0;
-  //   }
-  //   return 0;
-  // }
 
   Future<List<Result1Struct>> fetchPledgeItems(
       String pledgeNo, String brid) async {
@@ -2666,8 +2180,6 @@ class ApiService {
 
   Future<List<String>> fetchPurityParams(String pledgeNo, String brid,
       int itemType, String scheme, DateTime date) async {
-    print(
-        'Fetching Purity Params with: $pledgeNo, $brid, $itemType, $scheme, $date');
     const months = [
       'Jan',
       'Feb',
@@ -2685,9 +2197,7 @@ class ApiService {
     final dateStr =
         "${date.day.toString().padLeft(2, '0')}-${months[date.month - 1]}-${date.year}";
     final params = 'PURITYPARAMS*$pledgeNo*$brid*$itemType*$scheme*$dateStr';
-    // print('Purity Params Request Params: $params');
     final data = await _get('PLP_AUDIT_SELECT', params);
-    // print('Purity Params Data: $data');
     return data.map((e) => e['DEDUCTION_RATE'].toString()).toList();
   }
 
@@ -2708,25 +2218,20 @@ class ApiService {
     final data = await _get('STATEID_CHECK', '$brid*$stflg');
     final options = <int, String>{};
     for (final item in data) {
-      // Try to find keys if they differ, or fallback to values
       var id;
       var name;
-
       if (item is Map) {
-        // Iterate keys to find the numeric ID and the text description
         for (var key in item.keys) {
           if (key == '0' || key == 'STATUS_ID') id = item[key];
           if (key == "'-------SELECT---------'" || key == 'STATUS_NAME')
             name = item[key];
         }
-        // Fallback if specific keys not found: use first value as ID, second as Name
         if (id == null && item.values.isNotEmpty) {
           final vals = item.values.toList();
           if (vals.isNotEmpty) id = vals[0];
           if (vals.length > 1) name = vals[1];
         }
       }
-
       if (id != null && name != null) {
         final parsedId = double.tryParse(id.toString())?.toInt();
         if (parsedId != null) {
@@ -2740,10 +2245,7 @@ class ApiService {
   Future<Map<String, dynamic>?> fetchInventoryDetails(
       String brid, String pledgeNo) async {
     final data = await _get('LOAD_INV_DETAILS', '$brid*$pledgeNo');
-    // print(data);
-    if (data.isNotEmpty) {
-      return data[0];
-    }
+    if (data.isNotEmpty) return data[0];
     return null;
   }
 }
@@ -2752,16 +2254,20 @@ class _TextCell extends StatefulWidget {
   final String value;
   final ValueChanged<String> onChanged;
   final VoidCallback onSubmitted;
-  const _TextCell(
-      {required this.value,
-      required this.onChanged,
-      required this.onSubmitted});
+
+  const _TextCell({
+    required this.value,
+    required this.onChanged,
+    required this.onSubmitted,
+  });
+
   @override
   State<_TextCell> createState() => _TextCellState();
 }
 
 class _TextCellState extends State<_TextCell> {
   late TextEditingController _ctrl;
+
   @override
   void initState() {
     super.initState();
@@ -2771,7 +2277,6 @@ class _TextCellState extends State<_TextCell> {
   @override
   void didUpdateWidget(_TextCell oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Only update text if the external value changed and it doesn't match current input
     if (widget.value != oldWidget.value && widget.value != _ctrl.text) {
       _ctrl.text = widget.value;
       _ctrl.selection = TextSelection.collapsed(offset: _ctrl.text.length);
@@ -2779,11 +2284,7 @@ class _TextCellState extends State<_TextCell> {
   }
 
   @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
+  void dispose() {}
   @override
   Widget build(BuildContext context) {
     return SizedBox(
